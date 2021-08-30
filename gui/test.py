@@ -1,3 +1,8 @@
 import os
+import json
+import shutil
 
-os.system("labelImg")
+print(list(str(['shitou','jiandao','bu'])))
+
+
+

@@ -8,102 +8,263 @@ from PyQt5.QtWidgets import QFileDialog
 from main import Ui_MainForm
 import os
 import re
+import json
 import logging
 import datetime
 import operator
+from tools import split, voc2txt
+import cal_anchors
 
 
-def loadPath():
-    with open("path", 'r', encoding='utf-8') as f:
-        datadir = f.readline()
-    return datadir
+class EmittingStream(QtCore.QObject):
+    def __init__(self):
+        super().__init__()
+        self.textWritten = QtCore.pyqtSignal(str)  # 定义一个发送str的信号
 
+    def write(self, text):
+        self.textWritten.emit(str(text))
+
+
+def loadconfig():
+    with open("config", 'r', encoding='utf-8') as f:
+        config = f.readline()
+    return json.loads(config)
 
 def labelImg():
-    try:
-        os.system("labelImg")
-    except BaseException as e:
-        print("还未安装labelImg，正在自动安装。。。")
-        os.system("pip install labelImg -i https://pypi.douban.com/simple")
-        os.system("labelImg")
-
-
-
-
-
-def checkDataSet(path):
-    files = os.listdir(path)
-    imgs = []
-    xmls = []
-    for i in files:
-        filenames = os.path.splitext(i)
-        if filenames[1] in [".bmp",".jpg",".jpeg",".png",".tif",".tiff",".dng",".webp",".mpo"]:
-            imgs.append(filenames[0])
-
-        if filenames[1] == ".xml":
-            xmls.append(filenames[0])
-    if len(imgs) == 0:
-        return "目录中没有图像文件"
-    if len(xmls) == 0:
-        return "目录中没有xml文件"
-    if len(imgs) == 0 and len(xmls) == 0:
-        return "目录中没有图像与xml文件"
-    if len(imgs) != len(xmls):
-        return "数据集图片与xml数目不匹配！请检查数据集"
-    elif not operator.eq(imgs, xmls):
-        return "数据集图片与xml文件名不匹配，请检查数据集"
-    else:
-        return "数据集合法"
-
-
-
-
-
+    os.system("labelImg")
 
 class MainForm(QWidget,Ui_MainForm):
     def __init__(self):
         super(MainForm, self).__init__()
         self.setupUi(self)
+        EmittingStream().textWritten = self.outputWritten
+        EmittingStream().textWritten = self.outputWritten
+        sys.stdout = EmittingStream()
+        sys.stderr = EmittingStream()
         self.connecter()
-        self.dataDir = loadPath()
+        self.config = loadconfig()
+        self.dataDir = self.config['path']
+        self.isLegal = self.config['isLegal']
+        self.isVOC = self.config['isVOC']
+        self.imgFormat = self.config['img']
+        self.vocDir = self.config['vocpath']
+        self.isExtract = self.config['isExtract']
+        self.className = self.config['className'].strip().replace(" ","").replace("，",",").split(",")
+        self.uiInit()
+
+    def uiInit(self):
+
         self.lineEdit.setText(self.dataDir)
-
-
-
-
+        self.VOClineEdit.setText(self.vocDir)
+        self.isLegalBox.setChecked(bool(self.isLegal))
+        self.isVOCBox.setChecked(bool(self.isVOC))
+        self.isExtractedBox.setChecked(bool(self.isExtract))
+        self.isLegalBox.setDisabled(True)
+        self.classesEdit.setText(",".join(self.className))
+        self.isExtractedBox.setDisabled(True)
+        self.classesEdit.setReadOnly(True)
+        self.isExtractedBox.setStyleSheet("""color: rgb(0, 0, 0);
+                                        """)
+        self.isLegalBox.setStyleSheet("""color: rgb(0, 0, 0);
+                                        """)
+        self.isVOCBox.setDisabled(True)
+        self.isVOCBox.setStyleSheet("""color: rgb(0, 0, 0);
+                                        """)
+        self.outputWritten("    _____  _____     ____                           _________")
+        self.outputWritten("     \  \  /  /____  |  | _______                  /  ______/")
+        self.outputWritten("      \  \/  /  __ \_|  |/  __  \      ___    __  /  /____ ")
+        self.outputWritten("       \   __  / /  _|  |_  \ \  \     \  \  / /  \_____  \\")
+        self.outputWritten("       /  / / /_/  / |  | \  \_\  \     \  \/ / ___    /  / ")
+        self.outputWritten("      /  / /______/  |  |__\_______\     \___/ /  /___/  /")
+        self.outputWritten("     /__/            |_______/                 \________/   ")
+        self.outputWritten("")
+        self.outputWritten("欢迎使用YOLOv5-GUI(〃'▽'〃)！当前版本：V1.0")
 
     def connecter(self):
         self.browserButton.clicked.connect(self.browser)
         self.labelImgButton.clicked.connect(labelImg)
+        self.showInBrowserButton.clicked.connect(self.showInExplorer)
         self.checkButton.clicked.connect(self.checkData)
+        self.VOCButton.clicked.connect(self.generateVOC)
+        self.browserVOCButton.clicked.connect(self.browserVOC)
+        self.showInBrowserButton_2.clicked.connect(self.showInExplorer1)
+        self.extractButton.clicked.connect(self.extractData)
+        self.settingsButton.clicked.connect(self.saveClassName)
 
 
+    def saveClassName(self):
+        if self.classesEdit.isReadOnly():
+            self.settingsButton.setText("保存类别信息")
+            self.outputWritten("类别栏已取消保护模式，请修改类别信息")
+            self.classesEdit.setReadOnly(False)
+        else:
+            self.settingsButton.setText("修改类别信息")
+            self.className = self.classesEdit.text().strip().replace(" ","").replace("，",",").split(",")
+            self.outputWritten("已保存类别信息：[%s]，类别栏已锁定"%','.join(self.className))
+            self.classesEdit.setReadOnly(True)
+            self.saveConfig()
+
+    def saveConfig(self):
+        with open("config", "w", encoding='utf-8') as f:
+            f.write('{"path":"%s","isLegal":%d,"isVOC":%d,"img":"%s","vocpath":"%s","isExtract":%d,"className":"%s"}'%(self.dataDir,
+            self.isLegal,self.isVOC, self.imgFormat,self.vocDir, self.isExtract, ",".join(self.className)))
+
+    def showInExplorer(self):
+        os.system("start explorer %s"%self.dataDir.replace("/","\\"))
+
+    def showInExplorer1(self):
+        os.system("start explorer %s"%self.vocDir.replace("/","\\"))
+
+    def checkDataSet(self):
+        files = os.listdir(self.dataDir)
+        imgs = []
+        xmls = []
+        for i in files:
+            filenames = os.path.splitext(i)
+            if filenames[1] in [".bmp", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".dng", ".webp", ".mpo"]:
+                self.imgFormat = filenames[1][1:]
+                imgs.append(filenames[0])
+            if filenames[1] == ".xml":
+                xmls.append(filenames[0])
+        if len(imgs) == 0:
+            self.isLegal = 0
+            self.saveConfig()
+            self.isLegalBox.setChecked(False)
+            return "目录中没有图像文件"
+        if len(xmls) == 0:
+            self.isLegal = 0
+            self.saveConfig()
+            self.isLegalBox.setChecked(False)
+            return "目录中没有xml文件"
+        if len(imgs) == 0 and len(xmls) == 0:
+            self.isLegal = 0
+            self.saveConfig()
+            self.isLegalBox.setChecked(False)
+            return "目录中没有图像与xml文件"
+        if len(imgs) != len(xmls):
+            self.isLegal = 0
+            self.saveConfig()
+            self.isLegalBox.setChecked(False)
+            return "数据集图片与xml数目不匹配！请检查数据集"
+        elif not operator.eq(imgs, xmls):
+            self.isLegal = 0
+            self.saveConfig()
+            self.isLegalBox.setChecked(False)
+            return "数据集图片与xml文件名不匹配，请检查数据集"
+        else:
+            self.isLegal = 1
+            self.isLegalBox.setChecked(True)
+            self.saveConfig()
+            return "数据集合法"
+
+    def checkVOC(self):
+        files = os.listdir(self.vocDir)
+        if "Annotations" not in files or "images" not in files or "ImageSets" not in files or "labels" not in files:
+            self.isVOC = 0
+            self.isVOCBox.setChecked(False)
+            self.saveConfig()
+            return "非VOC格式，请先生成VOC数据集"
+        else:
+            self.isVOC = 1
+            self.isVOCBox.setChecked(True)
+            self.saveConfig()
+            return "数据集符合VOC标准"
+
+    def generateVOC(self):
+        if self.isVOC:
+            self.outputWritten("已生成VOC数据集")
+            return
+        else:
+            root = self.vocDir.replace("/","\\")
+            data = self.dataDir.replace("/","\\")
+            self.outputWritten("正在创建文件夹。。。")
+            if not os.path.exists(os.path.join(root,"Annotations")):
+                os.mkdir(os.path.join(root,"Annotations"))
+            if not os.path.exists(os.path.join(root,"ImageSets/Main")):
+                os.makedirs(os.path.join(root,"ImageSets/Main"))
+            if not os.path.exists(os.path.join(root, "labels")):
+                os.mkdir(os.path.join(root, "labels"))
+            if not os.path.exists(os.path.join(root, "images")):
+                os.mkdir(os.path.join(root, "images"))
+            self.outputWritten("文件夹创建完毕")
+            self.outputWritten("正在复制文件。。。")
+            os.system("copy "+data+"\\*.xml "+root+"\\Annotations")
+            os.system("copy "+data+"\\*.{} ".format(self.imgFormat)+root+"\\images")
+            xmlNum = len(os.listdir(os.path.join(root,"Annotations")))
+            picNum = len(os.listdir(os.path.join(root, "images")))
+            self.outputWritten("文件复制完毕，VOC已成功生成，共包含%d个xml文件和%d个图像"%(xmlNum, picNum))
+            self.isVOC = 1
+            self.isVOCBox.setChecked(True)
+            self.saveConfig()
+            return
 
     def browser(self):
         self.outputWritten("请选择数据集所在目录")
-        self.dataDir = QFileDialog.getExistingDirectory(self, "选取文件夹", self.dataDir)
-        self.lineEdit.setText(self.dataDir)
-        with open("path", "w", encoding='utf-8') as f:
-            f.write(self.dataDir)
-        self.outputWritten("数据集已选择："+self.dataDir+"，正在检验其合法性。。。")
-        self.outputWritten(checkDataSet(self.dataDir))
+        datadir = QFileDialog.getExistingDirectory(self, "选取文件夹", self.dataDir)
+        if datadir != '':
+            self.dataDir = datadir
+            self.lineEdit.setText(self.dataDir)
+            self.outputWritten("数据集已选择："+self.dataDir+"，正在检验其合法性。。。")
+            self.outputWritten(self.checkDataSet())
+            self.saveConfig()
+        else:
+            self.outputWritten("选择目录已取消！")
+
+    def browserVOC(self):
+        self.outputWritten("请选择数据集所在目录")
+        vocdir = QFileDialog.getExistingDirectory(self, "选取文件夹", self.vocDir)
+        if vocdir != '':
+            self.vocDir = vocdir
+            self.VOClineEdit.setText(self.vocDir)
+            self.outputWritten("数据集已选择：" + self.vocDir)
+            self.saveConfig()
+        else:
+            self.outputWritten("选择目录已取消！")
+
+    def checkTrain(self):
+        files = [""]
+        pass
 
     def checkData(self):
         self.outputWritten("正在检验数据集合法性。。。")
-        self.outputWritten(checkDataSet(self.dataDir))
+        self.outputWritten(self.checkDataSet())
+        self.outputWritten("正在检验数据是否符合VOC标准。。。")
+        self.outputWritten(self.checkVOC())
+        self.outputWritten("正在检验数据集是否满足训练要求。。。")
+        self.outputWritten(self.checkTrain())
+
+    def extractData(self):
+        if not self.isExtract:
+
+            os.system("copy .\\tools\\data.yaml "+self.vocDir.replace("/","\\"))
+            split.splitData(self.vocDir)
+            voc2txt.extractVOC(self.vocDir, self.className)
+            _, best_anchors, best_accuracy, best_ratios = cal_anchors.cal_main(self.vocDir, self.className)
+            self.outputWritten("Best Accuracy = " + str(round(best_accuracy, 2)) + '%')
+            self.outputWritten("Best Anchors = " + str(best_anchors))
+            self.outputWritten("Best Ratios = " + str(best_ratios))
+            self.isExtract = 1
+            self.isExtractedBox.setChecked(True)
+            self.saveConfig()
+            self.outputWritten("提取完毕，可以开始训练了")
+        else:
+            self.outputWritten("已提取，可以开始训练了")
+
+
 
 
     def keyPressEvent(self, key):
         pass
 
     def outputWritten(self, text):
-
         cursor = self.logTerminal.textCursor()
         cursor.movePosition(QtGui.QTextCursor.End)
         cursor.insertText(f'>>> {datetime.datetime.now()} ' + '- ' + text + '\n')
         self.logTerminal.setTextCursor(cursor)
         self.logTerminal.ensureCursorVisible()
         QApplication.processEvents()  # 一定加上这个功能，不然有卡顿
+
+
 
 
 if __name__  == "__main__":

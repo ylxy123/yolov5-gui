@@ -1,0 +1,6 @@
+train: E:/test/train.txt
+val: E:/test/val.txt
+# numbel of classes
+nc: 1
+# class names
+names: ['rat']

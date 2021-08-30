@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="window">
+    <file>title.png</file>
     <file>splash.jpg</file>
   </qresource>
 </RCC>
