@@ -1,44 +1,113 @@
+
+
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QTextEdit, QAction, QFileDialog
-from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget, QMessageBox, QApplication, QMainWindow
+from PyQt5.QtCore import QTimer, QDateTime, Qt
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtWidgets import QFileDialog
+from main import Ui_MainForm
+import os
+import re
+import logging
+import datetime
+import operator
 
 
-class Example(QMainWindow):
+def loadPath():
+    with open("path", 'r', encoding='utf-8') as f:
+        datadir = f.readline()
+    return datadir
+
+
+def labelImg():
+    try:
+        os.system("labelImg")
+    except BaseException as e:
+        print("还未安装labelImg，正在自动安装。。。")
+        os.system("pip install labelImg -i https://pypi.douban.com/simple")
+        os.system("labelImg")
+
+
+
+
+
+def checkDataSet(path):
+    files = os.listdir(path)
+    imgs = []
+    xmls = []
+    for i in files:
+        filenames = os.path.splitext(i)
+        if filenames[1] in [".bmp",".jpg",".jpeg",".png",".tif",".tiff",".dng",".webp",".mpo"]:
+            imgs.append(filenames[0])
+
+        if filenames[1] == ".xml":
+            xmls.append(filenames[0])
+    if len(imgs) == 0:
+        return "目录中没有图像文件"
+    if len(xmls) == 0:
+        return "目录中没有xml文件"
+    if len(imgs) == 0 and len(xmls) == 0:
+        return "目录中没有图像与xml文件"
+    if len(imgs) != len(xmls):
+        return "数据集图片与xml数目不匹配！请检查数据集"
+    elif not operator.eq(imgs, xmls):
+        return "数据集图片与xml文件名不匹配，请检查数据集"
+    else:
+        return "数据集合法"
+
+
+
+
+
+
+class MainForm(QWidget,Ui_MainForm):
     def __init__(self):
-        super(Example, self).__init__()
-        self.initUI()
-
-    def initUI(self):
-        self.textEdit = QTextEdit()
-        self.setCentralWidget(self.textEdit)
-        self.statusBar()
-
-        openfile = QAction(QIcon(r'C:\Users\Administrator\PycharmProjects\QT\picture\文件.jpg'), 'open', self)
-        openfile.setShortcut("Ctrl + 0")
-        openfile.setStatusTip('open new file')
-        openfile.triggered.connect(self.showDialog)
-
-        menubar = self.menuBar()
-        filemune = menubar.addMenu('$File')
-        filemune.addAction(openfile)
-
-        self.setGeometry(300, 300, 300, 300)
-        self.setWindowTitle('FIEL dialog')
-        self.show()
-
-    def showDialog(self):
-        fname = QFileDialog.getOpenFileName(self, 'open file', '/')
-        if fname[0]:
-            try:
-                f = open(fname[0], 'r')
-                with f:
-                    data = f.read()
-                    self.textEdit.setText(data)
-            except:
-                self.textEdit.setText("打开文件失败，可能是文件内型错误")
+        super(MainForm, self).__init__()
+        self.setupUi(self)
+        self.connecter()
+        self.dataDir = loadPath()
+        self.lineEdit.setText(self.dataDir)
 
 
-if __name__ == "__main__":
+
+
+
+    def connecter(self):
+        self.browserButton.clicked.connect(self.browser)
+        self.labelImgButton.clicked.connect(labelImg)
+        self.checkButton.clicked.connect(self.checkData)
+
+
+
+    def browser(self):
+        self.outputWritten("请选择数据集所在目录")
+        self.dataDir = QFileDialog.getExistingDirectory(self, "选取文件夹", self.dataDir)
+        self.lineEdit.setText(self.dataDir)
+        with open("path", "w", encoding='utf-8') as f:
+            f.write(self.dataDir)
+        self.outputWritten("数据集已选择："+self.dataDir+"，正在检验其合法性。。。")
+        self.outputWritten(checkDataSet(self.dataDir))
+
+    def checkData(self):
+        self.outputWritten("正在检验数据集合法性。。。")
+        self.outputWritten(checkDataSet(self.dataDir))
+
+
+    def keyPressEvent(self, key):
+        pass
+
+    def outputWritten(self, text):
+
+        cursor = self.logTerminal.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertText(f'>>> {datetime.datetime.now()} ' + '- ' + text + '\n')
+        self.logTerminal.setTextCursor(cursor)
+        self.logTerminal.ensureCursorVisible()
+        QApplication.processEvents()  # 一定加上这个功能，不然有卡顿
+
+
+if __name__  == "__main__":
     app = QApplication(sys.argv)
-    ex = Example()
-    sys.exit(app.exec_())
+    calu = MainForm()
+    calu.show()
+    sys.exit(app.exec())
