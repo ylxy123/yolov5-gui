@@ -154,7 +154,7 @@ class _RepeatSampler(object):
 
 class LoadImages:  # for inference
     def __init__(self, path, img_size=640, stride=32):
-        p = str(Path(path).absolute())  # os-agnostic absolute path
+        p = str(Path(path).absolute())  # os-agnostic absolute settings
         if '*' in p:
             files = sorted(glob.glob(p, recursive=True))  # glob
         elif os.path.isdir(p):
@@ -385,8 +385,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     with open(p, 'r') as t:
                         t = t.read().strip().splitlines()
                         parent = str(p.parent) + os.sep
-                        f += [x.replace('./', parent) if x.startswith('./') else x for x in t]  # local to global path
-                        # f += [p.parent / x.lstrip(os.sep) for x in t]  # local to global path (pathlib)
+                        f += [x.replace('./', parent) if x.startswith('./') else x for x in t]  # local to global settings
+                        # f += [p.parent / x.lstrip(os.sep) for x in t]  # local to global settings (pathlib)
                 else:
                     raise Exception(f'{prefix}{p} does not exist')
             self.img_files = sorted([x.replace('/', os.sep) for x in f if x.split('.')[-1].lower() in img_formats])
@@ -501,7 +501,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             path.with_suffix('.cache.npy').rename(path)  # remove .npy suffix
             logging.info(f'{prefix}New cache created: {path}')
         except Exception as e:
-            logging.info(f'{prefix}WARNING: Cache directory {path.parent} is not writeable: {e}')  # path not writeable
+            logging.info(f'{prefix}WARNING: Cache directory {path.parent} is not writeable: {e}')  # settings not writeable
         return x
 
     def __len__(self):
@@ -817,10 +817,10 @@ def extract_boxes(path='../datasets/coco128'):  # from utils.datasets import *; 
 
 
 def autosplit(path='../datasets/coco128/images', weights=(0.9, 0.1, 0.0), annotated_only=False):
-    """ Autosplit a dataset into train/val/test splits and save path/autosplit_*.txt files
+    """ Autosplit a dataset into train/val/test splits and save settings/autosplit_*.txt files
     Usage: from utils.datasets import *; autosplit()
     Arguments
-        path:            Path to images directory
+        settings:            Path to images directory
         weights:         Train, val, test weights (list, tuple)
         annotated_only:  Only use images with an annotated txt file
     """
@@ -891,7 +891,7 @@ def dataset_stats(path='coco128.yaml', autodownload=False, verbose=False):
     Usage2: from utils.datasets import *; dataset_stats('../datasets/coco128.zip', verbose=True)
     
     Arguments
-        path:           Path to data.yaml or data.zip (with data.yaml inside data.zip)
+        settings:           Path to data.yaml or data.zip (with data.yaml inside data.zip)
         autodownload:   Attempt to download dataset if not found locally
         verbose:        Print stats dictionary
     """
@@ -901,19 +901,19 @@ def dataset_stats(path='coco128.yaml', autodownload=False, verbose=False):
         return [[int(c), *[round(x, 6) for x in points]] for c, *points in labels]
 
     def unzip(path):
-        # Unzip data.zip TODO: CONSTRAINT: path/to/abc.zip MUST unzip to 'path/to/abc/'
-        if str(path).endswith('.zip'):  # path is data.zip
+        # Unzip data.zip TODO: CONSTRAINT: settings/to/abc.zip MUST unzip to 'settings/to/abc/'
+        if str(path).endswith('.zip'):  # settings is data.zip
             assert os.system(f'unzip -q {path} -d {path.parent}') == 0, f'Error unzipping {path}'
             data_dir = path.with_suffix('')  # dataset directory
             return True, data_dir, list(data_dir.rglob('*.yaml'))[0]  # zipped, data_dir, yaml_path
-        else:  # path is data.yaml
+        else:  # settings is data.yaml
             return False, None, path
 
     zipped, data_dir, yaml_path = unzip(Path(path))
     with open(check_file(yaml_path)) as f:
         data = yaml.safe_load(f)  # data dict
         if zipped:
-            data['path'] = data_dir  # TODO: should this be dir.resolve()?
+            data['settings'] = data_dir  # TODO: should this be dir.resolve()?
     check_dataset(data, autodownload)  # download dataset if missing
     nc = data['nc']  # number of classes
     stats = {'nc': nc, 'names': data['names']}  # statistics dictionary
@@ -924,7 +924,7 @@ def dataset_stats(path='coco128.yaml', autodownload=False, verbose=False):
         x = []
         dataset = LoadImagesAndLabels(data[split], augment=False, rect=True)  # load dataset
         if split == 'train':
-            cache_path = Path(dataset.label_files[0]).parent.with_suffix('.cache')  # *.cache path
+            cache_path = Path(dataset.label_files[0]).parent.with_suffix('.cache')  # *.cache settings
         for label in tqdm(dataset.labels, total=dataset.n, desc='Statistics'):
             x.append(np.bincount(label[:, 0].astype(int), minlength=nc))
         x = np.array(x)  # shape(128x80)

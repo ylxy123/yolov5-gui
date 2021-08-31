@@ -1,10 +1,10 @@
 
-
+import yaml
 import sys
-from PyQt5.QtWidgets import QWidget, QMessageBox, QApplication, QMainWindow
+from PyQt5.QtWidgets import QWidget, QMessageBox, QApplication, QMainWindow, QPushButton
 from PyQt5.QtCore import QTimer, QDateTime, Qt
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QDialog
 from main import Ui_MainForm
 import os
 import re
@@ -14,6 +14,7 @@ import datetime
 import operator
 from tools import split, voc2txt
 import cal_anchors
+from settings import Ui_TrainSettings
 
 
 class EmittingStream(QtCore.QObject):
@@ -25,8 +26,14 @@ class EmittingStream(QtCore.QObject):
         self.textWritten.emit(str(text))
 
 
+
 def loadconfig():
     with open("config", 'r', encoding='utf-8') as f:
+        config = f.readline()
+    return json.loads(config)
+
+def loadpath():
+    with open("settings", 'r', encoding='utf-8') as f:
         config = f.readline()
     return json.loads(config)
 
@@ -37,10 +44,10 @@ class MainForm(QWidget,Ui_MainForm):
     def __init__(self):
         super(MainForm, self).__init__()
         self.setupUi(self)
-        EmittingStream().textWritten = self.outputWritten
-        EmittingStream().textWritten = self.outputWritten
-        sys.stdout = EmittingStream()
-        sys.stderr = EmittingStream()
+        # EmittingStream().textWritten = self.outputWritten
+        # EmittingStream().textWritten = self.outputWritten
+        # sys.stdout = EmittingStream()
+        # sys.stderr = EmittingStream()
         self.connecter()
         self.config = loadconfig()
         self.dataDir = self.config['path']
@@ -50,6 +57,8 @@ class MainForm(QWidget,Ui_MainForm):
         self.vocDir = self.config['vocpath']
         self.isExtract = self.config['isExtract']
         self.className = self.config['className'].strip().replace(" ","").replace("，",",").split(",")
+        self.val = float(self.config['val'])
+        self.test = float(self.config['test'])
         self.uiInit()
 
     def uiInit(self):
@@ -90,7 +99,9 @@ class MainForm(QWidget,Ui_MainForm):
         self.showInBrowserButton_2.clicked.connect(self.showInExplorer1)
         self.extractButton.clicked.connect(self.extractData)
         self.settingsButton.clicked.connect(self.saveClassName)
+        self.paramsButton.clicked.connect(self.openSettings)
 
+    windowlist = []
 
     def saveClassName(self):
         if self.classesEdit.isReadOnly():
@@ -106,8 +117,9 @@ class MainForm(QWidget,Ui_MainForm):
 
     def saveConfig(self):
         with open("config", "w", encoding='utf-8') as f:
-            f.write('{"path":"%s","isLegal":%d,"isVOC":%d,"img":"%s","vocpath":"%s","isExtract":%d,"className":"%s"}'%(self.dataDir,
-            self.isLegal,self.isVOC, self.imgFormat,self.vocDir, self.isExtract, ",".join(self.className)))
+            f.write('{"settings":"%s","isLegal":%d,"isVOC":%d,"img":"%s","vocpath":"%s","isExtract":%d,"className":"%s"'%(self.dataDir,
+            self.isLegal,self.isVOC, self.imgFormat,self.vocDir, self.isExtract, ",".join(self.className))+
+                    ',"val":%.2f,"test":%.2f}'%(self.val, self.test))
 
     def showInExplorer(self):
         os.system("start explorer %s"%self.dataDir.replace("/","\\"))
@@ -156,6 +168,12 @@ class MainForm(QWidget,Ui_MainForm):
             self.isLegalBox.setChecked(True)
             self.saveConfig()
             return "数据集合法"
+
+    def openSettings(self):
+        the_window = SettingsForm()
+        self.windowlist.append(the_window)
+        # self.close()
+        the_window.show()
 
     def checkVOC(self):
         files = os.listdir(self.vocDir)
@@ -222,8 +240,8 @@ class MainForm(QWidget,Ui_MainForm):
             self.outputWritten("选择目录已取消！")
 
     def checkTrain(self):
-        files = [""]
-        pass
+
+        return ""
 
     def checkData(self):
         self.outputWritten("正在检验数据集合法性。。。")
@@ -234,10 +252,12 @@ class MainForm(QWidget,Ui_MainForm):
         self.outputWritten(self.checkTrain())
 
     def extractData(self):
-        if not self.isExtract:
-
+        if not self.isExtract or float(self.testSpinBox.text()) != self.test or float(self.valSpinBox.text()) != self.val:
             os.system("copy .\\tools\\data.yaml "+self.vocDir.replace("/","\\"))
-            split.splitData(self.vocDir)
+            self.test = round(float(self.testSpinBox.text()), 2)
+            self.val = round(float(self.valSpinBox.text()), 2)
+            self.outputWritten("正在划分数据集：测试集占比%.2f，验证集占比%.2f" % (self.test, self.val))
+            split.splitData(self.vocDir,trainval_per=self.val, train_per=self.test)
             voc2txt.extractVOC(self.vocDir, self.className)
             _, best_anchors, best_accuracy, best_ratios = cal_anchors.cal_main(self.vocDir, self.className)
             self.outputWritten("Best Accuracy = " + str(round(best_accuracy, 2)) + '%')
@@ -262,13 +282,232 @@ class MainForm(QWidget,Ui_MainForm):
         cursor.insertText(f'>>> {datetime.datetime.now()} ' + '- ' + text + '\n')
         self.logTerminal.setTextCursor(cursor)
         self.logTerminal.ensureCursorVisible()
-        QApplication.processEvents()  # 一定加上这个功能，不然有卡顿
+        QApplication.processEvents()
+
+
+
+
+class SettingsForm(QWidget, Ui_TrainSettings):
+    def __init__(self):
+        super(QWidget, self).__init__()
+        self.setupUi(self)
+        self.connecter()
+        self.defaultparams = {}
+        self.getDefaultParams()
+        self.config = loadpath()
+        self.uinit()
+
+
+
+    def connecter(self):
+        self.saveParamsButton.clicked.connect(self.saveParams)
+        self.defaultButton.clicked.connect(self.defaultParams)
+        self.defaultButton_2.clicked.connect(self.defaultTrainParams)
+        self.openModalButton.clicked.connect(self.openModalPath)
+        self.saveSettingsButton.clicked.connect(self.saveconfig)
+        self.ModalPathButton.clicked.connect(self.browser)
+
+    def uinit(self):
+        self.modalEdit.setText(self.config['modalpath'])
+        self.getModalList()
+
+    def openModalPath(self):
+        os.system("start explorer %s"%self.config['modalpath'].replace("/","\\"))
+
+    def saveconfig(self):
+        self.config['epochs'] = int(self.epoch.text())
+        self.config['batchsize'] = int(self.batch_size.text())
+        self.config['imgsize'] = int(self.img_size.text())
+        self.config['isrect'] = int(self.isRectBox.isChecked())
+        self.config['isevolve'] = int(self.isEvolveBox.isChecked())
+        self.config['isautoanchor'] = int(self.isAutoAnchorBox.isChecked())
+        self.config['ismuilt'] = int(self.isMuiltBox.isChecked())
+        self.config['iscache'] = int(self.isCacheBox.isChecked())
+        self.config['issingle'] = int(self.isSingleBox.isChecked())
+        self.config['optimizer'] = self.optimizer.currentText()
+        self.config['device'] = self.deviceBox.currentText()
+        self.config['isbn'] = int(self.isBnBox.isChecked())
+        self.config['isre'] = int(self.isRetrainBox.isChecked())
+        if self.modalBox.currentText() != "":
+            self.config['curmodal'] = self.modalBox.currentText()
+        with open("settings", 'w', encoding='utf-8') as f:
+            f.write(json.dumps(self.config))
+        reply = QMessageBox.information(self, "设置保存成功！", "是否退出当前页面？", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if reply:
+            self.close()
+
+
+
+
+    def defaultTrainParams(self):
+        self.epoch.setText("100")
+        self.batch_size.setText("4")
+        self.img_size.setText("640")
+        self.optimizer.setCurrentIndex(0)
+        self.deviceBox.setCurrentIndex(0)
+
+    def getDefaultParams(self):
+        with open("../data/hyps/hyp.scratch.default.yaml", "r", encoding='utf-8') as f:
+            content = f.read()
+        self.defaultparams = yaml.load(content, Loader=yaml.FullLoader)
+
+    def defaultParams(self):
+        self.lr0.setValue(self.defaultparams['lr0'])
+        self.lrf.setText(str(self.defaultparams['lrf']))
+        self.momentum.setValue(self.defaultparams['momentum'])
+        self.weight_decay.setText(str(self.defaultparams['weight_decay']))
+        self.warmup_epoch.setText(str(self.defaultparams['warmup_epochs']))
+        self.warmup_momentum.setText(str(self.defaultparams['warmup_momentum']))
+        self.warmup_bias_lr.setText(str(self.defaultparams['warmup_bias_lr']))
+        self.box.setText(str(self.defaultparams['box']))
+        self.cls.setText(str(self.defaultparams["cls"]))
+        self.cls_pw.setText(str(self.defaultparams["cls_pw"]))
+        self.obj.setText(str(self.defaultparams["obj"]))
+        self.obj_pw.setText(str(self.defaultparams["obj_pw"]))
+        self.iou_t.setText(str(self.defaultparams["iou_t"]))
+        self.anchor_t.setText(str(self.defaultparams["anchor_t"]))
+        self.hsv_h.setText(str(self.defaultparams["hsv_h"]))
+        self.hsv_s.setText(str(self.defaultparams["hsv_s"]))
+        self.hsv_v.setText(str(self.defaultparams["hsv_v"]))
+        self.degree.setText(str(self.defaultparams["degrees"]))
+        self.translate.setText(str(self.defaultparams["translate"]))
+        self.scale.setText(str(self.defaultparams["scale"]))
+        self.shear.setText(str(self.defaultparams["shear"]))
+        self.perspective.setText(str(self.defaultparams["perspective"]))
+        self.flipup.setText(str(round(self.defaultparams["flipud"],5)))
+        self.fliplr.setText(str(round(self.defaultparams["fliplr"],5)))
+        self.mosaic.setText(str(round(self.defaultparams["mosaic"],5)))
+        self.mixup.setText(str(round(self.defaultparams["mixup"],5)))
+        QApplication.processEvents()
+
+    def saveParams(self):
+        if self.lrf.isReadOnly():
+            self.saveParamsButton.setText("保存参数")
+            self.lr0.setReadOnly(False)
+            self.lrf.setReadOnly(False)
+            self.momentum.setReadOnly(False)
+            self.weight_decay.setReadOnly(False)
+            self.warmup_epoch.setReadOnly(False)
+            self.warmup_momentum.setReadOnly(False)
+            self.warmup_bias_lr.setReadOnly(False)
+            self.box.setReadOnly(False)
+            self.cls.setReadOnly(False)
+            self.cls_pw.setReadOnly(False)
+            self.obj.setReadOnly(False)
+            self.obj_pw.setReadOnly(False)
+            self.iou_t.setReadOnly(False)
+            self.anchor_t.setReadOnly(False)
+            self.hsv_h.setReadOnly(False)
+            self.hsv_s.setReadOnly(False)
+            self.hsv_s.setReadOnly(False)
+            self.degree.setReadOnly(False)
+            self.translate.setReadOnly(False)
+            self.scale.setReadOnly(False)
+            self.shear.setReadOnly(False)
+            self.perspective.setReadOnly(False)
+            self.flipup.setReadOnly(False)
+            self.fliplr.setReadOnly(False)
+            self.mixup.setReadOnly(False)
+            self.mosaic.setReadOnly(False)
+        else:
+            self.saveParamsButton.setText("修改参数")
+            self.lr0.setReadOnly(True)
+            self.lrf.setReadOnly(True)
+            self.momentum.setReadOnly(True)
+            self.weight_decay.setReadOnly(True)
+            self.warmup_epoch.setReadOnly(True)
+            self.warmup_momentum.setReadOnly(True)
+            self.warmup_bias_lr.setReadOnly(True)
+            self.box.setReadOnly(True)
+            self.cls.setReadOnly(True)
+            self.cls_pw.setReadOnly(True)
+            self.obj.setReadOnly(True)
+            self.obj_pw.setReadOnly(True)
+            self.iou_t.setReadOnly(True)
+            self.anchor_t.setReadOnly(True)
+            self.hsv_h.setReadOnly(True)
+            self.hsv_s.setReadOnly(True)
+            self.hsv_s.setReadOnly(True)
+            self.degree.setReadOnly(True)
+            self.translate.setReadOnly(True)
+            self.scale.setReadOnly(True)
+            self.shear.setReadOnly(True)
+            self.perspective.setReadOnly(True)
+            self.flipup.setReadOnly(True)
+            self.fliplr.setReadOnly(True)
+            self.mixup.setReadOnly(True)
+            self.mosaic.setReadOnly(True)
+            self.defaultparams['lr0'] = float(self.lr0.text())
+            self.defaultparams['lrf'] = float(self.lrf.text())
+            self.defaultparams['momentum'] = float(self.momentum.text())
+            self.defaultparams['weight_decay'] = float(self.weight_decay.text())
+            self.defaultparams['warmup_epochs'] = float(self.warmup_epoch.text())
+            self.defaultparams['warmup_momentum'] = float(self.warmup_momentum.text())
+            self.defaultparams['warmup_bias_lr'] = float(self.warmup_bias_lr.text())
+            self.defaultparams['box'] = float(self.box.text())
+            self.defaultparams['cls'] = float(self.cls.text())
+            self.defaultparams['cls_pw'] = float(self.cls_pw.text())
+            self.defaultparams['obj'] = float(self.obj.text())
+            self.defaultparams['obj_pw'] = float(self.obj_pw.text())
+            self.defaultparams['iou_t'] = float(self.iou_t.text())
+            self.defaultparams['anchor_t'] = float(self.anchor_t.text())
+            self.defaultparams['hsv_h'] = float(self.hsv_h.text())
+            self.defaultparams['hsv_s'] = float(self.hsv_s.text())
+            self.defaultparams['hsv_v'] = float(self.hsv_v.text())
+            self.defaultparams['degrees'] = float(self.degree.text())
+            self.defaultparams['translate'] = float(self.translate.text())
+            self.defaultparams['scale'] = float(self.scale.text())
+            self.defaultparams['shear'] = float(self.shear.text())
+            self.defaultparams['perspective'] = float(self.perspective.text())
+            self.defaultparams['flipud'] = float(self.flipup.text())
+            self.defaultparams['fliplr'] = float(self.fliplr.text())
+            self.defaultparams['mosaic'] = float(self.mosaic.text())
+            self.defaultparams['mixup'] = float(self.mixup.text())
+            with open("../data/hyps/hyp.scratch.yaml", "w", encoding='utf-8') as f:
+                yaml.dump(self.defaultparams, f)
+
+    def browser(self):
+        # self.outputWritten("请选择数据集所在目录")
+        datadir = QFileDialog.getExistingDirectory(self, "选取文件夹", self.config['modalpath'])
+        if datadir != '':
+            self.config['modalpath'] = datadir
+            self.modalEdit.setText(datadir)
+            # self.outputWritten("数据集已选择："+self.dataDir+"，正在检验其合法性。。。")
+            # self.outputWritten(self.checkDataSet())
+            self.saveconfig()
+        # else:
+        #     self.outputWritten("选择目录已取消！")
+        self.getModalList()
+        return
+
+    def getModalList(self):
+        self.modalBox.clear()
+        modallist = os.listdir(self.config['modalpath'])
+        modals = []
+        if len(modallist) != 0:
+            for item in modallist:
+                if item[-3:] in [".pt", "pth"]:
+                    modals.append(self.config['modalpath']+"/"+item)
+        if len(modals) != 0:
+            self.modalBox.addItems(modals)
+        return
+
+
+
+    # windowlist = []
+    # def closeEvent(self, a0: QtGui.QCloseEvent):
+    #     the_window = MainForm()
+    #     self.windowlist.append(the_window)
+    #     the_window.show()
+    #     a0.accept()
+
+
 
 
 
 
 if __name__  == "__main__":
     app = QApplication(sys.argv)
-    calu = MainForm()
-    calu.show()
+    main = MainForm()
+    main.show()
     sys.exit(app.exec())

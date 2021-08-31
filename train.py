@@ -1,7 +1,7 @@
 """Train a YOLOv5 model on a custom dataset
 
 Usage:
-    $ python path/to/train.py --data coco128.yaml --weights yolov5s.pt --img 640
+    $ python settings/to/train.py --data coco128.yaml --weights yolov5s.pt --img 640
 """
 
 import argparse
@@ -30,7 +30,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 FILE = Path(__file__).absolute()
-sys.path.append(FILE.parents[0].as_posix())  # add yolov5/ to path
+sys.path.append(FILE.parents[0].as_posix())  # add yolov5/ to settings
 
 import test  # for end-of-epoch mAP
 from models.experimental import attempt_load
@@ -53,7 +53,7 @@ RANK = int(os.getenv('RANK', -1))
 WORLD_SIZE = int(os.getenv('WORLD_SIZE', 1))
 
 
-def train(hyp,  # path/to/hyp.yaml or hyp dictionary
+def train(hyp,  # settings/to/hyp.yaml or hyp dictionary
           opt,
           device,
           ):
@@ -480,10 +480,10 @@ def train(hyp,  # path/to/hyp.yaml or hyp dictionary
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default='yolo/yolov5s.pt', help='initial weights path')
-    parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
-    parser.add_argument('--data', type=str, default='data/coco128.yaml', help='dataset.yaml path')
-    parser.add_argument('--hyp', type=str, default='data/hyps/hyp.scratch.yaml', help='hyperparameters path')
+    parser.add_argument('--weights', type=str, default='yolo/yolov5s.pt', help='initial weights settings')
+    parser.add_argument('--cfg', type=str, default='', help='model.yaml settings')
+    parser.add_argument('--data', type=str, default='data/coco128.yaml', help='dataset.yaml settings')
+    parser.add_argument('--hyp', type=str, default='data/hyps/hyp.scratch.yaml', help='hyperparameters settings')
     parser.add_argument('--epochs', type=int, default=300)
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs')
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='[train, test] image sizes')
@@ -528,7 +528,7 @@ def main(opt):
     # Resume
     wandb_run = check_wandb_resume(opt)
     if opt.resume and not wandb_run:  # resume an interrupted run
-        ckpt = opt.resume if isinstance(opt.resume, str) else get_latest_run()  # specified or most recent path
+        ckpt = opt.resume if isinstance(opt.resume, str) else get_latest_run()  # specified or most recent settings
         assert os.path.isfile(ckpt), 'ERROR: --resume checkpoint does not exist'
         with open(Path(ckpt).parent.parent / 'opt.yaml') as f:
             opt = argparse.Namespace(**yaml.safe_load(f))  # replace

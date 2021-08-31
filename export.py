@@ -1,7 +1,7 @@
 """Export a YOLOv5 *.pt model to TorchScript, ONNX, CoreML formats
 
 Usage:
-    $ python path/to/export.py --weights yolov5s.pt --img 640 --batch 1
+    $ python settings/to/export.py --weights yolov5s.pt --img 640 --batch 1
 """
 
 import argparse
@@ -14,7 +14,7 @@ import torch.nn as nn
 from torch.utils.mobile_optimizer import optimize_for_mobile
 
 FILE = Path(__file__).absolute()
-sys.path.append(FILE.parents[0].as_posix())  # add yolov5/ to path
+sys.path.append(FILE.parents[0].as_posix())  # add yolov5/ to settings
 
 from models.common import Conv
 from models.yolo import Detect
@@ -24,7 +24,7 @@ from utils.general import colorstr, check_img_size, check_requirements, file_siz
 from utils.torch_utils import select_device
 
 
-def run(weights='./yolov5s.pt',  # weights path
+def run(weights='./yolov5s.pt',  # weights settings
         img_size=(640, 640),  # image (height, width)
         batch_size=1,  # batch size
         device='cpu',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
@@ -146,7 +146,7 @@ def run(weights='./yolov5s.pt',  # weights path
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', type=str, default='./yolov5s.pt', help='weights path')
+    parser.add_argument('--weights', type=str, default='./yolov5s.pt', help='weights settings')
     parser.add_argument('--img-size', nargs='+', type=int, default=[640, 640], help='image (height, width)')
     parser.add_argument('--batch-size', type=int, default=1, help='batch size')
     parser.add_argument('--device', default='cpu', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')

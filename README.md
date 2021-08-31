@@ -106,8 +106,8 @@ results.print()  # or .show(), .save(), .crop(), .pandas(), etc.
 $ python detect.py --source 0  # webcam
                             file.jpg  # image 
                             file.mp4  # video
-                            path/  # directory
-                            path/*.jpg  # glob
+                            settings/  # directory
+                            settings/*.jpg  # glob
                             'https://youtu.be/NUsoVlDFqZg'  # YouTube video
                             'rtsp://example.com/media.mp4'  # RTSP, RTMP, HTTP stream
 ```

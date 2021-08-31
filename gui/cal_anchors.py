@@ -106,7 +106,7 @@ names: {}
         for j in range(CLUSTERS):
             anchor = [round(clusters[j][0] * 640, 2), round(clusters[j][1] * 640, 2)]
             anchors_tmp.append(anchor)
-            print(f"Anchors:{anchor}")
+            #print(f"Anchors:{anchor}")
 
         temp_accuracy = avg_iou(train_boxes, clusters) * 100
         #print("Train_Accuracy:{:.2f}%".format(temp_accuracy))

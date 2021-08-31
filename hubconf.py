@@ -35,14 +35,14 @@ def _create(name, pretrained=True, channels=3, classes=80, autoshape=True, verbo
     set_logging(verbose=verbose)
 
     save_dir = Path('') if str(name).endswith('.pt') else file.parent
-    path = (save_dir / name).with_suffix('.pt')  # checkpoint path
+    path = (save_dir / name).with_suffix('.pt')  # checkpoint settings
     try:
         device = select_device(('0' if torch.cuda.is_available() else 'cpu') if device is None else device)
 
         if pretrained and channels == 3 and classes == 80:
             model = attempt_load(path, map_location=device)  # download/load FP32 model
         else:
-            cfg = list((Path(__file__).parent / 'models').rglob(f'{name}.yaml'))[0]  # model.yaml path
+            cfg = list((Path(__file__).parent / 'models').rglob(f'{name}.yaml'))[0]  # model.yaml settings
             model = Model(cfg, channels, classes)  # create model
             if pretrained:
                 ckpt = torch.load(attempt_download(path), map_location=device)  # load
@@ -62,7 +62,7 @@ def _create(name, pretrained=True, channels=3, classes=80, autoshape=True, verbo
         raise Exception(s) from e
 
 
-def custom(path='path/to/model.pt', autoshape=True, verbose=True, device=None):
+def custom(path='settings/to/model.pt', autoshape=True, verbose=True, device=None):
     # YOLOv5 custom or local model
     return _create(path, autoshape=autoshape, verbose=verbose, device=device)
 
@@ -109,7 +109,7 @@ def yolov5x6(pretrained=True, channels=3, classes=80, autoshape=True, verbose=Tr
 
 if __name__ == '__main__':
     model = _create(name='yolov5s', pretrained=True, channels=3, classes=80, autoshape=True, verbose=True)  # pretrained
-    # model = custom(path='path/to/model.pt')  # custom
+    # model = custom(settings='settings/to/model.pt')  # custom
 
     # Verify inference
     import cv2

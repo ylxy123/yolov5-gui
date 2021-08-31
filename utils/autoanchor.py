@@ -64,7 +64,7 @@ def kmean_anchors(path='./data/coco128.yaml', n=9, img_size=640, thr=4.0, gen=10
     """ Creates kmeans-evolved anchors from training dataset
 
         Arguments:
-            path: path to dataset *.yaml, or a loaded dataset
+            path: settings to dataset *.yaml, or a loaded dataset
             n: number of anchors
             img_size: image size used for training
             thr: anchor-label wh ratio threshold hyperparameter hyp['anchor_t'] used for training, default=4.0

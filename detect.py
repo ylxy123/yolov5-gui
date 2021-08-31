@@ -1,7 +1,7 @@
 """Run inference with a YOLOv5 model on images, videos, directories, streams
 
 Usage:
-    $ python path/to/detect.py --source path/to/img.jpg --weights yolov5s.pt --img 640
+    $ python settings/to/detect.py --source settings/to/img.jpg --weights yolov5s.pt --img 640
 """
 
 import argparse
@@ -14,7 +14,7 @@ import torch
 import torch.backends.cudnn as cudnn
 
 FILE = Path(__file__).absolute()
-sys.path.append(FILE.parents[0].as_posix())  # add yolov5/ to path
+sys.path.append(FILE.parents[0].as_posix())  # add yolov5/ to settings
 
 from models.experimental import attempt_load
 from utils.datasets import LoadStreams, LoadImages
@@ -25,7 +25,7 @@ from utils.torch_utils import select_device, load_classifier, time_synchronized
 
 
 @torch.no_grad()
-def run(weights='yolov5s.pt',  # model.pt path(s)
+def run(weights='yolov5s.pt',  # model.pt settings(s)
         source='data/images',  # file/dir/URL/glob, 0 for webcam
         imgsz=640,  # inference size (pixels)
         conf_thres=0.25,  # confidence threshold
@@ -189,7 +189,7 @@ def run(weights='yolov5s.pt',  # model.pt path(s)
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default='yolov5s.pt', help='model.pt path(s)')
+    parser.add_argument('--weights', nargs='+', type=str, default='yolov5s.pt', help='model.pt settings(s)')
     parser.add_argument('--source', type=str, default='data/images', help='file/dir/URL/glob, 0 for webcam')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')

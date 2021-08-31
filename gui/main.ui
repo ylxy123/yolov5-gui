@@ -22,6 +22,11 @@
     <height>800</height>
    </size>
   </property>
+  <property name="font">
+   <font>
+    <family>方正粗黑宋简体</family>
+   </font>
+  </property>
   <property name="windowTitle">
    <string>YOLOv5</string>
   </property>
@@ -183,6 +188,11 @@
      <height>201</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <family>宋体</family>
+    </font>
+   </property>
    <property name="styleSheet">
     <string notr="true">background-color: rgb(0, 0, 0);
 color: rgb(255, 255, 255);</string>
@@ -322,6 +332,11 @@ color: rgb(255, 255, 255);</string>
      <height>31</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <family>方正粗黑宋简体</family>
+    </font>
+   </property>
    <property name="acceptDrops">
     <bool>false</bool>
    </property>
@@ -332,7 +347,7 @@ color: rgb(255, 255, 255);</string>
     <string notr="true">color: rgb(0, 0, 0);</string>
    </property>
    <property name="text">
-    <string>是VOC格式</string>
+    <string>VOC格式</string>
    </property>
    <property name="checkable">
     <bool>true</bool>
@@ -423,9 +438,9 @@ color: rgb(255, 255, 255);</string>
   <widget class="QPushButton" name="extractButton">
    <property name="geometry">
     <rect>
-     <x>760</x>
+     <x>770</x>
      <y>330</y>
-     <width>201</width>
+     <width>191</width>
      <height>31</height>
     </rect>
    </property>
@@ -468,9 +483,9 @@ color: rgb(255, 255, 255);</string>
   <widget class="QLineEdit" name="VOClineEdit">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>220</x>
      <y>280</y>
-     <width>411</width>
+     <width>201</width>
      <height>31</height>
     </rect>
    </property>
@@ -481,7 +496,7 @@ color: rgb(255, 255, 255);</string>
   <widget class="QPushButton" name="browserVOCButton">
    <property name="geometry">
     <rect>
-     <x>670</x>
+     <x>440</x>
      <y>280</y>
      <width>101</width>
      <height>31</height>
@@ -529,8 +544,8 @@ color: rgb(255, 255, 255);</string>
   <widget class="QPushButton" name="showInBrowserButton_2">
    <property name="geometry">
     <rect>
-     <x>790</x>
-     <y>280</y>
+     <x>580</x>
+     <y>330</y>
      <width>171</width>
      <height>31</height>
     </rect>
@@ -547,6 +562,11 @@ color: rgb(255, 255, 255);</string>
      <width>81</width>
      <height>31</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>方正粗黑宋简体</family>
+    </font>
    </property>
    <property name="acceptDrops">
     <bool>false</bool>
@@ -570,9 +590,9 @@ color: rgb(255, 255, 255);</string>
   <widget class="QPushButton" name="settingsButton">
    <property name="geometry">
     <rect>
-     <x>610</x>
+     <x>440</x>
      <y>330</y>
-     <width>131</width>
+     <width>121</width>
      <height>31</height>
     </rect>
    </property>
@@ -583,9 +603,9 @@ color: rgb(255, 255, 255);</string>
   <widget class="QLineEdit" name="classesEdit">
    <property name="geometry">
     <rect>
-     <x>270</x>
+     <x>250</x>
      <y>330</y>
-     <width>321</width>
+     <width>171</width>
      <height>31</height>
     </rect>
    </property>
@@ -620,6 +640,88 @@ color: rgb(255, 255, 255);</string>
    </property>
    <property name="text">
     <string>v1.0  made by: ylxy</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_8">
+   <property name="geometry">
+    <rect>
+     <x>770</x>
+     <y>280</y>
+     <width>121</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>新宋体</family>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>验证集占比：</string>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="testSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>680</x>
+     <y>280</y>
+     <width>71</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <double>0.010000000000000</double>
+   </property>
+   <property name="maximum">
+    <double>1.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.050000000000000</double>
+   </property>
+   <property name="value">
+    <double>0.900000000000000</double>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_9">
+   <property name="geometry">
+    <rect>
+     <x>560</x>
+     <y>280</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>新宋体</family>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>测试集占比：</string>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="valSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>890</x>
+     <y>280</y>
+     <width>71</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <double>0.010000000000000</double>
+   </property>
+   <property name="maximum">
+    <double>1.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.050000000000000</double>
+   </property>
+   <property name="value">
+    <double>0.900000000000000</double>
    </property>
   </widget>
   <zorder>line_4</zorder>
@@ -660,6 +762,10 @@ color: rgb(255, 255, 255);</string>
   <zorder>classesEdit</zorder>
   <zorder>label_6</zorder>
   <zorder>label_7</zorder>
+  <zorder>label_8</zorder>
+  <zorder>testSpinBox</zorder>
+  <zorder>label_9</zorder>
+  <zorder>valSpinBox</zorder>
  </widget>
  <resources>
   <include location="res/main.qrc"/>

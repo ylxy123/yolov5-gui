@@ -1,7 +1,7 @@
 """Test a trained YOLOv5 model accuracy on a custom dataset
 
 Usage:
-    $ python path/to/test.py --data coco128.yaml --weights yolov5s.pt --img 640
+    $ python settings/to/test.py --data coco128.yaml --weights yolov5s.pt --img 640
 """
 
 import argparse
@@ -17,7 +17,7 @@ import yaml
 from tqdm import tqdm
 
 FILE = Path(__file__).absolute()
-sys.path.append(FILE.parents[0].as_posix())  # add yolov5/ to path
+sys.path.append(FILE.parents[0].as_posix())  # add yolov5/ to settings
 
 from models.experimental import attempt_load
 from utils.datasets import create_dataloader
@@ -30,7 +30,7 @@ from utils.torch_utils import select_device, time_synchronized
 
 @torch.no_grad()
 def run(data,
-        weights=None,  # model.pt path(s)
+        weights=None,  # model.pt settings(s)
         batch_size=32,  # batch size
         imgsz=640,  # inference size (pixels)
         conf_thres=0.001,  # confidence threshold
@@ -101,7 +101,7 @@ def run(data,
     if not training:
         if device.type != 'cpu':
             model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
-        task = task if task in ('train', 'val', 'test') else 'val'  # path to train/val/test images
+        task = task if task in ('train', 'val', 'test') else 'val'  # settings to train/val/test images
         dataloader = create_dataloader(data[task], imgsz, batch_size, gs, single_cls, pad=0.5, rect=True,
                                        prefix=colorstr(f'{task}: '))[0]
 
@@ -270,7 +270,7 @@ def run(data,
     # Save JSON
     if save_json and len(jdict):
         w = Path(weights[0] if isinstance(weights, list) else weights).stem if weights is not None else ''  # weights
-        anno_json = str(Path(data.get('path', '../coco')) / 'annotations/instances_val2017.json')  # annotations json
+        anno_json = str(Path(data.get('settings', '../coco')) / 'annotations/instances_val2017.json')  # annotations json
         pred_json = str(save_dir / f"{w}_predictions.json")  # predictions json
         print('\nEvaluating pycocotools mAP... saving %s...' % pred_json)
         with open(pred_json, 'w') as f:
@@ -306,8 +306,8 @@ def run(data,
 
 def parse_opt():
     parser = argparse.ArgumentParser(prog='test.py')
-    parser.add_argument('--data', type=str, default='data/coco128.yaml', help='dataset.yaml path')
-    parser.add_argument('--weights', nargs='+', type=str, default='yolov5s.pt', help='model.pt path(s)')
+    parser.add_argument('--data', type=str, default='data/coco128.yaml', help='dataset.yaml settings')
+    parser.add_argument('--weights', nargs='+', type=str, default='yolov5s.pt', help='model.pt settings(s)')
     parser.add_argument('--batch-size', type=int, default=32, help='batch size')
     parser.add_argument('--imgsz', '--img', '--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.001, help='confidence threshold')

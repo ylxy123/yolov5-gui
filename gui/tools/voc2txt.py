@@ -27,7 +27,7 @@ def extractVOC(vocpath, classname):
     def convert_annotation(imageid):
         in_file = open(os.path.join(abs_path,'Annotations/%s.xml' %imageid), encoding='UTF-8')
         out_file = open(os.path.join(abs_path,'labels/%s.txt' %imageid), 'w', encoding='UTF-8')
-        print(os.path.join(abs_path,'labels/%s.txt' %imageid))
+        # print(os.settings.join(abs_path,'labels/%s.txt' %imageid))
         tree = ET.parse(in_file)
         root = tree.getroot()
         size = root.find('size')

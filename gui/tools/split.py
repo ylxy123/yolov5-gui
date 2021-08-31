@@ -6,9 +6,9 @@ import argparse
 def splitData(datapath, trainval_per = 1.0, train_per = 0.9):
     parser = argparse.ArgumentParser()
     #xml文件的地址，根据自己的数据进行修改 xml一般存放在Annotations下
-    parser.add_argument('--xml_path', default=str(os.path.join(datapath,'Annotations')), type=str, help='input xml label path')
+    parser.add_argument('--xml_path', default=str(os.path.join(datapath,'Annotations')), type=str, help='input xml label settings')
     #数据集的划分，地址选择自己数据下的ImageSets/Main
-    parser.add_argument('--txt_path', default=str(os.path.join(datapath,'ImageSets/Main')), type=str, help='output txt label path')
+    parser.add_argument('--txt_path', default=str(os.path.join(datapath,'ImageSets/Main')), type=str, help='output txt label settings')
     opt = parser.parse_args()
 
     trainval_percent = trainval_per

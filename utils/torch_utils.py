@@ -52,7 +52,7 @@ def date_modified(path=__file__):
     return f'{t.year}-{t.month}-{t.day}'
 
 
-def git_describe(path=Path(__file__).parent):  # path must be a directory
+def git_describe(path=Path(__file__).parent):  # settings must be a directory
     # return human-readable git description, i.e. v5.0-5-g3e25f1e https://git-scm.com/docs/git-describe
     s = f'git -C {path} describe --tags --long --always'
     try:
