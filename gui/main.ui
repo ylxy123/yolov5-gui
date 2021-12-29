@@ -31,7 +31,7 @@
    <string>YOLOv5</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="res/main.qrc">
+   <iconset resource="../../../../yolov5-gui/yolov5-master/gui/res/main.qrc">
     <normaloff>:/window/title.png</normaloff>:/window/title.png</iconset>
   </property>
   <widget class="QLineEdit" name="lineEdit">
@@ -768,7 +768,7 @@ color: rgb(255, 255, 255);</string>
   <zorder>valSpinBox</zorder>
  </widget>
  <resources>
-  <include location="res/main.qrc"/>
+  <include location="../../../../yolov5-gui/yolov5-master/gui/res/main.qrc"/>
  </resources>
  <connections/>
 </ui>

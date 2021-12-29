@@ -26,7 +26,7 @@
    <string>训练参数配置</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="res/main.qrc">
+   <iconset resource="../../../../yolov5-gui/yolov5-master/gui/res/main.qrc">
     <normaloff>:/window/title.png</normaloff>:/window/title.png</iconset>
   </property>
   <widget class="QTabWidget" name="tabWidget_3">
@@ -56,7 +56,7 @@
       <rect>
        <x>20</x>
        <y>20</y>
-       <width>201</width>
+       <width>251</width>
        <height>51</height>
       </rect>
      </property>
@@ -169,7 +169,7 @@
      <property name="geometry">
       <rect>
        <x>460</x>
-       <y>20</y>
+       <y>70</y>
        <width>241</width>
        <height>51</height>
       </rect>
@@ -314,7 +314,7 @@
       <string>模型保存目录：</string>
      </property>
     </widget>
-    <widget class="QComboBox" name="comboBox_2">
+    <widget class="QComboBox" name="checkpointBox">
      <property name="geometry">
       <rect>
        <x>500</x>
@@ -363,7 +363,7 @@
      <property name="geometry">
       <rect>
        <x>460</x>
-       <y>70</y>
+       <y>120</y>
        <width>241</width>
        <height>51</height>
       </rect>
@@ -381,8 +381,8 @@
     <widget class="QCheckBox" name="isCacheBox">
      <property name="geometry">
       <rect>
-       <x>460</x>
-       <y>120</y>
+       <x>720</x>
+       <y>310</y>
        <width>241</width>
        <height>51</height>
       </rect>
@@ -397,32 +397,10 @@
       <string>是否提前缓存图片至内存</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="isEvolveBox">
-     <property name="geometry">
-      <rect>
-       <x>730</x>
-       <y>20</y>
-       <width>241</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>黑体</family>
-       <pointsize>12</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>是否进行超参数进化</string>
-     </property>
-     <property name="checked">
-      <bool>false</bool>
-     </property>
-    </widget>
     <widget class="QCheckBox" name="isMuiltBox">
      <property name="geometry">
       <rect>
-       <x>730</x>
+       <x>720</x>
        <y>70</y>
        <width>241</width>
        <height>51</height>
@@ -441,7 +419,7 @@
     <widget class="QCheckBox" name="isSingleBox">
      <property name="geometry">
       <rect>
-       <x>730</x>
+       <x>720</x>
        <y>120</y>
        <width>241</width>
        <height>51</height>
@@ -758,6 +736,63 @@
      </property>
      <property name="text">
       <string>保 存 设 置</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_80">
+     <property name="geometry">
+      <rect>
+       <x>720</x>
+       <y>20</y>
+       <width>171</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>黑体</family>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>进化轮次：</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="isEvolveBox">
+     <property name="geometry">
+      <rect>
+       <x>830</x>
+       <y>30</y>
+       <width>101</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">font: 87 9pt &quot;Arial Black&quot;;</string>
+     </property>
+     <property name="text">
+      <string>3</string>
+     </property>
+     <property name="readOnly">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="isEvolve">
+     <property name="geometry">
+      <rect>
+       <x>460</x>
+       <y>20</y>
+       <width>241</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>黑体</family>
+       <pointsize>12</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>是否进行超参数进化</string>
      </property>
     </widget>
    </widget>
@@ -1956,7 +1991,7 @@ font: 87 9pt &quot;Arial Black&quot;;</string>
   </widget>
  </widget>
  <resources>
-  <include location="res/main.qrc"/>
+  <include location="../../../../yolov5-gui/yolov5-master/gui/res/main.qrc"/>
  </resources>
  <connections/>
 </ui>

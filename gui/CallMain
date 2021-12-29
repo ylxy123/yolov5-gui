@@ -1,8 +1,11 @@
+import time
 
 import yaml
+import subprocess
+from subprocess import STDOUT, PIPE
 import sys
 from PyQt5.QtWidgets import QWidget, QMessageBox, QApplication, QMainWindow, QPushButton
-from PyQt5.QtCore import QTimer, QDateTime, Qt
+from PyQt5.QtCore import QTimer, QDateTime, Qt, QThread, pyqtSignal, pyqtSlot
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QFileDialog, QDialog
 from main import Ui_MainForm
@@ -15,17 +18,6 @@ import operator
 from tools import split, voc2txt
 import cal_anchors
 from settings import Ui_TrainSettings
-
-
-class EmittingStream(QtCore.QObject):
-    def __init__(self):
-        super().__init__()
-        self.textWritten = QtCore.pyqtSignal(str)  # 定义一个发送str的信号
-
-    def write(self, text):
-        self.textWritten.emit(str(text))
-
-
 
 def loadconfig():
     with open("config", 'r', encoding='utf-8') as f:
@@ -44,10 +36,6 @@ class MainForm(QWidget,Ui_MainForm):
     def __init__(self):
         super(MainForm, self).__init__()
         self.setupUi(self)
-        # EmittingStream().textWritten = self.outputWritten
-        # EmittingStream().textWritten = self.outputWritten
-        # sys.stdout = EmittingStream()
-        # sys.stderr = EmittingStream()
         self.connecter()
         self.config = loadconfig()
         self.dataDir = self.config['path']
@@ -59,10 +47,16 @@ class MainForm(QWidget,Ui_MainForm):
         self.className = self.config['className'].strip().replace(" ","").replace("，",",").split(",")
         self.val = float(self.config['val'])
         self.test = float(self.config['test'])
+        self.trainSettings = loadpath()
+        self.mythread = MyThread(self.vocDir)
+        self.mythread.signal.connect(self.callback)
         self.uiInit()
 
-    def uiInit(self):
+    windowlist = []
 
+    def uiInit(self):
+        sys.stdout = Stream(newText=self.outputWritten)
+        # sys.stderr = Stream(newText=self.outputWritten)
         self.lineEdit.setText(self.dataDir)
         self.VOClineEdit.setText(self.vocDir)
         self.isLegalBox.setChecked(bool(self.isLegal))
@@ -89,6 +83,38 @@ class MainForm(QWidget,Ui_MainForm):
         self.outputWritten("")
         self.outputWritten("欢迎使用YOLOv5-GUI(〃'▽'〃)！当前版本：V1.0")
 
+    def callback(self, i):
+        self.progressBar.setValue(int(i))
+        #if i == "训练完毕":
+            #reply = QMessageBox.information(self, "训练已完成！", "训练已完成！", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+
+
+    def train(self):
+        print(" ")
+        print("开始训练。。。")
+        str1 = "python train.py --data {}/data.yaml --epochs {} --batch-size {} --img-size {} {}{} {}{}{}{}--device {}{} "
+        str2 = "{}{}{}--workers 4 --project {}"
+        cmd = str1+str2
+        cmd = cmd.format(self.vocDir, self.trainSettings['epochs'], self.trainSettings['batchsize'], self.trainSettings['imgsize'],
+                         "--rect " if bool(self.trainSettings['isrect']) else "", "--resume "+self.trainSettings['curmodal'] if bool(self.trainSettings['isre']) else "",
+                         "--nosave " if bool(self.trainSettings['checkpoint']) else "",
+                         "--noautoanchor " if bool(self.trainSettings['isautoanchor']) else "",
+                         "--evolve "+str(self.trainSettings['isevolve'])+" " if bool(self.trainSettings['evolve']) else "",
+                         "--cache-images " if bool(self.trainSettings['iscache']) else "",
+                         "cpu" if self.trainSettings['device'] == "CPU" else "0 ",
+                         "--muilt-scale " if bool(self.trainSettings['ismuilt']) else "",
+                         "--single-cls " if bool(self.trainSettings['issingle']) else "",
+                         "--adam " if self.trainSettings['optimizer']=="adam" else "",
+                         "--sync-bn " if bool(self.trainSettings['isbn']) else "",
+                         self.trainSettings['modalpath'])
+        print(cmd)
+        # f = os.popen(cmd, 'r', 1)
+        # os.system(cmd)
+        self.mythread.start()
+
+
+
+
     def connecter(self):
         self.browserButton.clicked.connect(self.browser)
         self.labelImgButton.clicked.connect(labelImg)
@@ -100,8 +126,7 @@ class MainForm(QWidget,Ui_MainForm):
         self.extractButton.clicked.connect(self.extractData)
         self.settingsButton.clicked.connect(self.saveClassName)
         self.paramsButton.clicked.connect(self.openSettings)
-
-    windowlist = []
+        self.trainButton.clicked.connect(self.train)
 
     def saveClassName(self):
         if self.classesEdit.isReadOnly():
@@ -117,7 +142,7 @@ class MainForm(QWidget,Ui_MainForm):
 
     def saveConfig(self):
         with open("config", "w", encoding='utf-8') as f:
-            f.write('{"settings":"%s","isLegal":%d,"isVOC":%d,"img":"%s","vocpath":"%s","isExtract":%d,"className":"%s"'%(self.dataDir,
+            f.write('{"path":"%s","isLegal":%d,"isVOC":%d,"img":"%s","vocpath":"%s","isExtract":%d,"className":"%s"'%(self.dataDir,
             self.isLegal,self.isVOC, self.imgFormat,self.vocDir, self.isExtract, ",".join(self.className))+
                     ',"val":%.2f,"test":%.2f}'%(self.val, self.test))
 
@@ -126,6 +151,10 @@ class MainForm(QWidget,Ui_MainForm):
 
     def showInExplorer1(self):
         os.system("start explorer %s"%self.vocDir.replace("/","\\"))
+
+    def closeEvent(self, event):
+        sys.stdout = sys.__stdout__
+        super().closeEvent(event)
 
     def checkDataSet(self):
         files = os.listdir(self.dataDir)
@@ -240,8 +269,7 @@ class MainForm(QWidget,Ui_MainForm):
             self.outputWritten("选择目录已取消！")
 
     def checkTrain(self):
-
-        return ""
+        pass
 
     def checkData(self):
         self.outputWritten("正在检验数据集合法性。。。")
@@ -249,7 +277,7 @@ class MainForm(QWidget,Ui_MainForm):
         self.outputWritten("正在检验数据是否符合VOC标准。。。")
         self.outputWritten(self.checkVOC())
         self.outputWritten("正在检验数据集是否满足训练要求。。。")
-        self.outputWritten(self.checkTrain())
+        # self.outputWritten(self.checkTrain())
 
     def extractData(self):
         if not self.isExtract or float(self.testSpinBox.text()) != self.test or float(self.valSpinBox.text()) != self.val:
@@ -270,19 +298,18 @@ class MainForm(QWidget,Ui_MainForm):
         else:
             self.outputWritten("已提取，可以开始训练了")
 
-
-
-
     def keyPressEvent(self, key):
         pass
 
     def outputWritten(self, text):
-        cursor = self.logTerminal.textCursor()
-        cursor.movePosition(QtGui.QTextCursor.End)
-        cursor.insertText(f'>>> {datetime.datetime.now()} ' + '- ' + text + '\n')
-        self.logTerminal.setTextCursor(cursor)
-        self.logTerminal.ensureCursorVisible()
-        QApplication.processEvents()
+        text = text.replace("[0m","").replace("[34m","").replace("[1m","").replace("[31m","")
+        if text != "\n":
+            cursor = self.logTerminal.textCursor()
+            cursor.movePosition(QtGui.QTextCursor.End)
+            cursor.insertText(f'>>> {datetime.datetime.now()} ' + '- ' + text+"\n")
+            self.logTerminal.setTextCursor(cursor)
+            self.logTerminal.ensureCursorVisible()
+            QApplication.processEvents()
 
 
 
@@ -297,8 +324,6 @@ class SettingsForm(QWidget, Ui_TrainSettings):
         self.config = loadpath()
         self.uinit()
 
-
-
     def connecter(self):
         self.saveParamsButton.clicked.connect(self.saveParams)
         self.defaultButton.clicked.connect(self.defaultParams)
@@ -309,17 +334,35 @@ class SettingsForm(QWidget, Ui_TrainSettings):
 
     def uinit(self):
         self.modalEdit.setText(self.config['modalpath'])
+        self.checkpointBox.setCurrentIndex(self.config['checkpoint'])
         self.getModalList()
+        self.epoch.setText(str(self.config['epochs']))
+        self.batch_size.setText(str(self.config['batchsize']))
+        self.img_size.setText(str(self.config['imgsize']))
+        self.isRectBox.setChecked(bool(self.config['isrect']))
+        self.isEvolveBox.setText(str(self.config['isevolve']))
+        self.isBnBox.setChecked(bool(self.config['isbn']))
+        self.isSingleBox.setChecked(bool(self.config['issingle']))
+        self.isCacheBox.setChecked(bool(self.config['iscache']))
+        self.isMuiltBox.setChecked(bool(self.config['ismuilt']))
+        self.isAutoAnchorBox.setChecked(bool(self.config['isautoanchor']))
+        self.optimizer.setCurrentIndex(0 if self.config['optimizer']=="SGD" else 1)
+        self.deviceBox.setCurrentIndex(1 if self.config['device']=="CPU" else 0)
+        self.isEvolve.setChecked(bool(self.config['evolve']))
 
     def openModalPath(self):
         os.system("start explorer %s"%self.config['modalpath'].replace("/","\\"))
 
     def saveconfig(self):
+        self.save2file()
+        self.exit()
+
+    def save2file(self):
         self.config['epochs'] = int(self.epoch.text())
         self.config['batchsize'] = int(self.batch_size.text())
         self.config['imgsize'] = int(self.img_size.text())
         self.config['isrect'] = int(self.isRectBox.isChecked())
-        self.config['isevolve'] = int(self.isEvolveBox.isChecked())
+        self.config['isevolve'] = int(self.isEvolveBox.text())
         self.config['isautoanchor'] = int(self.isAutoAnchorBox.isChecked())
         self.config['ismuilt'] = int(self.isMuiltBox.isChecked())
         self.config['iscache'] = int(self.isCacheBox.isChecked())
@@ -328,16 +371,18 @@ class SettingsForm(QWidget, Ui_TrainSettings):
         self.config['device'] = self.deviceBox.currentText()
         self.config['isbn'] = int(self.isBnBox.isChecked())
         self.config['isre'] = int(self.isRetrainBox.isChecked())
+        self.config['checkpoint'] = self.checkpointBox.currentIndex()
+        self.config['evolve'] = int(self.isEvolve.isChecked())
         if self.modalBox.currentText() != "":
             self.config['curmodal'] = self.modalBox.currentText()
         with open("settings", 'w', encoding='utf-8') as f:
             f.write(json.dumps(self.config))
+
+
+    def exit(self):
         reply = QMessageBox.information(self, "设置保存成功！", "是否退出当前页面？", QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-        if reply:
+        if reply == QMessageBox.Yes:
             self.close()
-
-
-
 
     def defaultTrainParams(self):
         self.epoch.setText("100")
@@ -345,6 +390,16 @@ class SettingsForm(QWidget, Ui_TrainSettings):
         self.img_size.setText("640")
         self.optimizer.setCurrentIndex(0)
         self.deviceBox.setCurrentIndex(0)
+        self.checkpointBox.setCurrentIndex(0)
+        self.isEvolve.setChecked(False)
+        self.isRectBox.setChecked(False)
+        self.isBnBox.setChecked(False)
+        self.isMuiltBox.setChecked(False)
+        self.isAutoAnchorBox.setChecked(False)
+        self.isSingleBox.setChecked(False)
+        self.isCacheBox.setChecked(False)
+        self.isRetrainBox.setChecked(False)
+
 
     def getDefaultParams(self):
         with open("../data/hyps/hyp.scratch.default.yaml", "r", encoding='utf-8') as f:
@@ -463,7 +518,7 @@ class SettingsForm(QWidget, Ui_TrainSettings):
             self.defaultparams['fliplr'] = float(self.fliplr.text())
             self.defaultparams['mosaic'] = float(self.mosaic.text())
             self.defaultparams['mixup'] = float(self.mixup.text())
-            with open("../data/hyps/hyp.scratch.yaml", "w", encoding='utf-8') as f:
+            with open("../data/hyps/hyp.scratch.yaml", "w", encoding='gbk') as f:
                 yaml.dump(self.defaultparams, f)
 
     def browser(self):
@@ -474,7 +529,7 @@ class SettingsForm(QWidget, Ui_TrainSettings):
             self.modalEdit.setText(datadir)
             # self.outputWritten("数据集已选择："+self.dataDir+"，正在检验其合法性。。。")
             # self.outputWritten(self.checkDataSet())
-            self.saveconfig()
+            self.save2file()
         # else:
         #     self.outputWritten("选择目录已取消！")
         self.getModalList()
@@ -493,14 +548,57 @@ class SettingsForm(QWidget, Ui_TrainSettings):
         return
 
 
+@pyqtSlot(str)
+class Stream(QtCore.QObject):
+    newText = pyqtSignal(str)
 
-    # windowlist = []
-    # def closeEvent(self, a0: QtGui.QCloseEvent):
-    #     the_window = MainForm()
-    #     self.windowlist.append(the_window)
-    #     the_window.show()
-    #     a0.accept()
+    def write(self, text):
+        self.newText.emit(str(text))
+        QApplication.processEvents()
 
+class MyThread(QThread):
+    signal = pyqtSignal(str)
+    def __init__(self, vocpath):
+        super(MyThread, self).__init__()
+        self.trainSettings = loadpath()
+        self.vocDir = vocpath
+
+    def run(self):
+        self.trainSettings = loadpath()
+        os.chdir("..\\")
+        str1 = "python train.py --data {}/data.yaml --epochs {} --batch-size {} --img-size {} {}{} {}{}{}{}--device {}{} "
+        str2 = "{}{}{}--workers 4 --project {}"
+        cmd = str1 + str2
+        cmd = cmd.format(self.vocDir, self.trainSettings['epochs'], self.trainSettings['batchsize'],
+                         self.trainSettings['imgsize'],
+                         "--rect " if bool(self.trainSettings['isrect']) else "",
+                         "--resume " + self.trainSettings['curmodal'] if bool(self.trainSettings['isre']) else "",
+                         "--nosave " if bool(self.trainSettings['checkpoint']) else "",
+                         "--noautoanchor " if bool(self.trainSettings['isautoanchor']) else "",
+                         "--evolve " + str(self.trainSettings['isevolve']) + " " if bool(
+                             self.trainSettings['evolve']) else "",
+                         "--cache-images " if bool(self.trainSettings['iscache']) else "",
+                         "cpu" if self.trainSettings['device'] == "CPU" else "0 ",
+                         "--muilt-scale " if bool(self.trainSettings['ismuilt']) else "",
+                         "--single-cls " if bool(self.trainSettings['issingle']) else "",
+                         "--adam " if self.trainSettings['optimizer'] == "adam" else "",
+                         "--sync-bn " if bool(self.trainSettings['isbn']) else "",
+                         self.trainSettings['modalpath'])
+
+        p = subprocess.Popen(cmd, bufsize=1, stdout=PIPE, shell=True)
+        for i in iter(p.stdout.readline, b''):
+            out = str(i, 'gbk')
+            print(out)
+            tmp = out.split(" ")
+            if tmp[0] == "epoch:":
+                self.signal.emit((str(int((int(tmp[1])+1)*100.0/self.trainSettings['epochs']))))
+        #self.signal.emit("训练完毕")
+        p.stdout.close()
+        p.wait()
+
+        print("训练完毕")
+
+        os.chdir(".\\gui")
 
 
 
@@ -510,4 +608,4 @@ if __name__  == "__main__":
     app = QApplication(sys.argv)
     main = MainForm()
     main.show()
-    sys.exit(app.exec())
+    sys.exit(app.exec_())

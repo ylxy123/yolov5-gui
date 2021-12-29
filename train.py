@@ -14,7 +14,6 @@ import warnings
 from copy import deepcopy
 from pathlib import Path
 from threading import Thread
-
 import math
 import numpy as np
 import torch.distributed as dist
@@ -359,7 +358,7 @@ def train(hyp,  # settings/to/hyp.yaml or hyp dictionary
                 mem = '%.3gG' % (torch.cuda.memory_reserved() / 1E9 if torch.cuda.is_available() else 0)  # (GB)
                 s = ('%10s' * 2 + '%10.4g' * 6) % (
                     f'{epoch}/{epochs - 1}', mem, *mloss, targets.shape[0], imgs.shape[-1])
-                pbar.set_description(s)
+                # pbar.set_description(s)
 
                 # Plot
                 if plots and ni < 3:
@@ -372,7 +371,7 @@ def train(hyp,  # settings/to/hyp.yaml or hyp dictionary
                 elif plots and ni == 10 and loggers['wandb']:
                     wandb_logger.log({'Mosaics': [loggers['wandb'].Image(str(x), caption=x.name) for x in
                                                   save_dir.glob('train*.jpg') if x.exists()]})
-
+        print("epoch: %d"%epoch)
             # end batch ------------------------------------------------------------------------------------------------
 
         # Scheduler
@@ -481,8 +480,8 @@ def train(hyp,  # settings/to/hyp.yaml or hyp dictionary
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', type=str, default='yolo/yolov5s.pt', help='initial weights settings')
-    parser.add_argument('--cfg', type=str, default='', help='model.yaml settings')
-    parser.add_argument('--data', type=str, default='data/coco128.yaml', help='dataset.yaml settings')
+    parser.add_argument('--cfg', type=str, default='models/yolov5s.yaml', help='model.yaml settings')
+    parser.add_argument('--data', type=str, default='', help='dataset.yaml settings')
     parser.add_argument('--hyp', type=str, default='data/hyps/hyp.scratch.yaml', help='hyperparameters settings')
     parser.add_argument('--epochs', type=int, default=300)
     parser.add_argument('--batch-size', type=int, default=16, help='total batch size for all GPUs')
